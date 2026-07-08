@@ -1,0 +1,14 @@
+[package]
+name = "gba_image_editor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = "0.28"
+egui = "0.28"
+image = "0.25"
+grit-sys = { path = "../grit-sys" }
+
+[[bin]]
+name = "gba_image_editor"
+path = "src/main.rs"
