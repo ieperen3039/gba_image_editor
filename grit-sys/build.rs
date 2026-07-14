@@ -6,17 +6,18 @@ fn main() {
     cc::Build::new()
         .cpp(true)
         .include("include")
-        .file("cprs.cpp")
-        .file("cprs_huff.cpp")
-        .file("cprs_lz.cpp")
-        .file("cprs_rle.cpp")
-        .file("grit_core.cpp")
-        .file("grit_misc.cpp")
-        .file("grit_prep.cpp")
-        .file("grit_shared.cpp")
-        .file("grit_xp.cpp")
-        .file("logger.cpp")
-        .file("pathfun.cpp")
+        .define("VERSION_STRING", "\"v1.21.1\"")
+        .file("src/cprs.cpp")
+        .file("src/cprs_huff.cpp")
+        .file("src/cprs_lz.cpp")
+        .file("src/cprs_rle.cpp")
+        .file("src/grit_core.cpp")
+        .file("src/grit_misc.cpp")
+        .file("src/grit_prep.cpp")
+        .file("src/grit_shared.cpp")
+        .file("src/grit_xp.cpp")
+        .file("src/logger.cpp")
+        .file("src/pathfun.cpp")
         .compile("grit");
 
     // Link the static library
@@ -29,6 +30,7 @@ fn main() {
     // Generate bindings from Grit's C headers
     let bindings = bindgen::Builder::default()
         .header("include/grit.h")
+        .clang_args(["-x", "c++"])
         // Add other headers as needed
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()

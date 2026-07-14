@@ -1,7 +1,6 @@
 use egui;
 use crate::grit;
 
-#[derive(Default)]
 pub struct App {
     grit_status: String,
 }
@@ -28,7 +27,7 @@ impl eframe::App for App {
 
             ui.group(|ui| {
                 ui.label("Tile Sheet Input");
-                if ui.button("Load Image...") {
+                if ui.button("Load Image...").clicked() {
                     // TODO: File dialog to load tile sheet
                 }
             });
@@ -50,10 +49,10 @@ impl eframe::App for App {
             ui.separator();
 
             ui.horizontal(|ui| {
-                if ui.button("Process") {
+                if ui.button("Process").clicked() {
                     // TODO: Call grit processing
                 }
-                if ui.button("Export") {
+                if ui.button("Export").clicked() {
                     // TODO: Save binary output
                 }
             });
