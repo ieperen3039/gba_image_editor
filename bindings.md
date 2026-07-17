@@ -11,12 +11,13 @@ Grit depends on cldib, and inherits a few data structures from it.
 ```rust
 #[repr(C)]
 pub struct CLDIB {
-    pub data: *mut BYTE,  // opaque blob — internal layout (header + pixels + palette) is
-                          // managed entirely by the dib_* functions below; do not read/write
-                          // `data` directly, treat CLDIB as a handle.
+    pub data: *mut BYTE, // opaque blob
 }
 // size 8, align 8 (i.e. just one pointer-sized field on this platform/build)
 ```
+
+internal layout of `data` (header + pixels + palette) is managed entirely by the dib_* functions below; do not 
+read/write `data` directly, treat CLDIB as a handle.
 
 ### Type: `RECORD` — sized binary buffer
 
@@ -26,8 +27,8 @@ This is the struct backing every grit output field (`_gfxRec`, `_mapRec`, `_meta
 ```rust
 #[repr(C)]
 pub struct RECORD {
-    pub width: c_int,   // width of `data`, in units of the record's datatype (not necessarily bytes)
-    pub height: c_int,  // height of `data` / length of `data`, in units of the record's datatype
+    pub width: c_int, // width of `data`, in units of the record's datatype (not necessarily bytes)
+    pub height: c_int, // height of `data` / length of `data`, in units of the record's datatype
     pub data: *mut BYTE, // raw binary payload
 }
 // size 16, align 8
@@ -42,16 +43,16 @@ record (e.g. from the corresponding `GritRec` field like `gfxDataType`/`mapDataT
 ```rust
 #[repr(C)]
 pub struct MapselFormat {
-    pub base: u32,       // additive base mapsel value
-    pub bitDepth: u8,    // full mapsel length in bits
-    pub idShift: u8,     // tile-index bitfield: shift
-    pub idLen: u8,       // tile-index bitfield: length
-    pub hfShift: u8,     // horizontal-flip bitfield: shift
-    pub hfLen: u8,       // horizontal-flip bitfield: length
-    pub vfShift: u8,     // vertical-flip bitfield: shift
-    pub vfLen: u8,       // vertical-flip bitfield: length
-    pub pbShift: u8,     // palette-bank bitfield: shift
-    pub pbLen: u8,       // palette-bank bitfield: length
+    pub base: u32, // additive base mapsel value
+    pub bitDepth: u8, // full mapsel length in bits
+    pub idShift: u8, // tile-index bitfield: shift
+    pub idLen: u8, // tile-index bitfield: length
+    pub hfShift: u8, // horizontal-flip bitfield: shift
+    pub hfLen: u8, // horizontal-flip bitfield: length
+    pub vfShift: u8, // vertical-flip bitfield: shift
+    pub vfLen: u8, // vertical-flip bitfield: length
+    pub pbShift: u8, // palette-bank bitfield: shift
+    pub pbLen: u8, // palette-bank bitfield: length
 }
 // size 16, align 4
 ```
@@ -65,7 +66,7 @@ tilemap entry formats.
 ```rust
 #[repr(C)]
 pub struct Mapsel {
-    pub value_: u32,  // packed as: [0-15] tile index, [26] hflip, [27] vflip, [28-31] palette bank
+    pub value_: u32, // packed as: [0-15] tile index, [26] hflip, [27] vflip, [28-31] palette bank
 }
 // size 4, align 4
 ```
@@ -78,13 +79,13 @@ before packing into a `RECORD` via `tmap_pack` using a `MapselFormat`.
 ```rust
 #[repr(C)]
 pub struct Tilemap {
-    pub width: c_int,           // map width, in tiles
-    pub height: c_int,          // map height, in tiles
-    pub data: *mut Mapsel,      // map entries, width*height long
-    pub tileWidth: c_int,       // pixel width of one tile
-    pub tileHeight: c_int,      // pixel height of one tile
-    pub tiles: *mut CLDIB,      // the tileset (graphics) referenced by `data`'s indices
-    pub flags: u32,            // TmapFlags bitmask used to build this tilemap
+    pub width: c_int, // map width, in tiles
+    pub height: c_int, // map height, in tiles
+    pub data: *mut Mapsel, // map entries, width*height long
+    pub tileWidth: c_int, // pixel width of one tile
+    pub tileHeight: c_int, // pixel height of one tile
+    pub tiles: *mut CLDIB, // the tileset (graphics) referenced by `data`'s indices
+    pub flags: u32, // TmapFlags bitmask used to build this tilemap
 }
 // size 40, align 8
 ```
@@ -93,11 +94,11 @@ pub struct Tilemap {
 
 ```rust
 pub type TmapFlags = c_int;
-pub const TmapFlags_TMAP_TILE: TmapFlags = 1;      // allow unique-tile mapping (dedupe identical tiles)
-pub const TmapFlags_TMAP_FLIP: TmapFlags = 2;       // allow flipped-tile reuse
-pub const TmapFlags_TMAP_PBANK: TmapFlags = 4;      // allow palette-bank-swapped tile reuse (8bpp only)
+pub const TmapFlags_TMAP_TILE: TmapFlags = 1; // allow unique-tile mapping (dedupe identical tiles)
+pub const TmapFlags_TMAP_FLIP: TmapFlags = 2; // allow flipped-tile reuse
+pub const TmapFlags_TMAP_PBANK: TmapFlags = 4; // allow palette-bank-swapped tile reuse (8bpp only)
 pub const TmapFlags_TMAP_COLMAJOR: TmapFlags = 128; // traverse image column-major during mapping
-pub const TmapFlags_TMAP_DEFAULT: TmapFlags = 1;    // = TMAP_TILE only (unique tiles, no flip/pbank)
+pub const TmapFlags_TMAP_DEFAULT: TmapFlags = 1; // = TMAP_TILE only (unique tiles, no flip/pbank)
 ```
 These correspond directly to `GritRec.mapRedux` (`EGritMapRedux`) — `GRIT_RDX_TILE`/`FLIP`/`PBANK`
 map 1:1 to `TMAP_TILE`/`FLIP`/`PBANK`.
@@ -117,51 +118,49 @@ pub const eClrChannel_CCE_RGBA: eClrChannel = 15;
 ### Functions — `CLDIB` (bitmap) manipulation
 
 ```rust
-extern "C" {
-    pub fn dib_alloc(width: c_int, height: c_int, bpp: c_int, data: *const BYTE, bTopDown: bool) -> *mut CLDIB;
-    // Allocate a new CLDIB of the given size/bit-depth, optionally initialized from `data`
-    // (pass null to zero-init). This is the entry point for wrapping a loaded image buffer.
+fn dib_alloc(width: c_int, height: c_int, bpp: c_int, data: *const BYTE, bTopDown: bool) -> *mut CLDIB;
+// Allocate a new CLDIB of the given size/bit-depth, optionally initialized from `data`
+// (pass null to zero-init). This is the entry point for wrapping a loaded image buffer.
 
-    pub fn dib_free(dib: *mut CLDIB);
-    // Free a CLDIB previously returned by dib_alloc/dib_clone/dib_copy/etc.
+fn dib_free(dib: *mut CLDIB);
+// Free a CLDIB previously returned by dib_alloc/dib_clone/dib_copy/etc.
 
-    pub fn dib_clone(src: *mut CLDIB) -> *mut CLDIB;
-    // Deep-copy a CLDIB.
+fn dib_clone(src: *mut CLDIB) -> *mut CLDIB;
+// Deep-copy a CLDIB.
 
-    pub fn dib_mov(dst: *mut CLDIB, src: *mut CLDIB) -> bool;
-    // Move src's contents into dst (dst's previous contents are replaced/freed; src is consumed).
+fn dib_mov(dst: *mut CLDIB, src: *mut CLDIB) -> bool;
+// Move src's contents into dst (dst's previous contents are replaced/freed; src is consumed).
 
-    pub fn dib_copy(src: *mut CLDIB, ll: c_int, tt: c_int, rr: c_int, bb: c_int, bClip: bool) -> *mut CLDIB;
-    // Extract a [ll,rr) x [tt,bb) sub-rectangle of src into a new CLDIB (this is what backs
-    // GritRec's areaLeft/areaTop/areaRight/areaBottom cropping).
+fn dib_copy(src: *mut CLDIB, ll: c_int, tt: c_int, rr: c_int, bb: c_int, bClip: bool) -> *mut CLDIB;
+// Extract a [ll,rr) x [tt,bb) sub-rectangle of src into a new CLDIB (this is what backs
+// GritRec's areaLeft/areaTop/areaRight/areaBottom cropping).
 
-    pub fn dib_paste(dst: *mut CLDIB, src: *mut CLDIB, dstX: c_int, dstY: c_int) -> bool;
-    // Blit src into dst at (dstX, dstY).
+fn dib_paste(dst: *mut CLDIB, src: *mut CLDIB, dstX: c_int, dstY: c_int) -> bool;
+// Blit src into dst at (dstX, dstY).
 
-    pub fn dib_get_attr(dib: *mut CLDIB, width: *mut c_int, height: *mut c_int, bpp: *mut c_int, pitch: *mut c_int) -> bool;
-    // Read back a CLDIB's dimensions/bit-depth/row-pitch (out-params).
+fn dib_get_attr(dib: *mut CLDIB, width: *mut c_int, height: *mut c_int, bpp: *mut c_int, pitch: *mut c_int) -> bool;
+// Read back a CLDIB's dimensions/bit-depth/row-pitch (out-params).
 
-    pub fn dib_get_img_at(dib: *mut CLDIB, x: c_int, y: c_int) -> *mut BYTE;
-    // Pointer to the raw pixel data at (x, y) (address arithmetic uses the pitch from dib_get_attr).
+fn dib_get_img_at(dib: *mut CLDIB, x: c_int, y: c_int) -> *mut BYTE;
+// Pointer to the raw pixel data at (x, y) (address arithmetic uses the pitch from dib_get_attr).
 
-    pub fn dib_swap_rgb(dib: *mut CLDIB) -> *mut CLDIB;
-    // Swap R and B channels in place (BGR <-> RGB), returns dib.
+fn dib_swap_rgb(dib: *mut CLDIB) -> *mut CLDIB;
+// Swap R and B channels in place (BGR <-> RGB), returns dib.
 
-    pub fn dib_hflip(dib: *mut CLDIB) -> bool;
-    pub fn dib_vflip(dib: *mut CLDIB) -> bool;
-    pub fn dib_vflip2(dib: *mut CLDIB) -> bool;
-    // Flip in place.
+fn dib_hflip(dib: *mut CLDIB) -> bool;
+fn dib_vflip(dib: *mut CLDIB) -> bool;
+fn dib_vflip2(dib: *mut CLDIB) -> bool;
+// Flip in place.
 
-    pub fn dib_to_hbm(dib: *mut CLDIB) -> HBITMAP;
-    pub fn dib_from_hbm(hbm: HBITMAP) -> *mut CLDIB;
-    // Windows GDI interop (HBITMAP) — irrelevant for an egui-based, cross-platform-minded tool;
-    // avoid these and go through dib_alloc/dib_get_img_at instead.
+fn dib_to_hbm(dib: *mut CLDIB) -> HBITMAP;
+fn dib_from_hbm(hbm: HBITMAP) -> *mut CLDIB;
+// Windows GDI interop (HBITMAP) — irrelevant for an egui-based, cross-platform-minded tool;
+// avoid these and go through dib_alloc/dib_get_img_at instead.
 
-    pub fn dib_to_hdc(hdc: HDC, rectDest: *const RECT, dib: *mut CLDIB, rectSrc: *const RECT, flags: DWORD) -> c_int;
-    pub fn dib_blit(hdc: HDC, dX: c_int, dY: c_int, dW: c_int, dH: c_int, dib: *mut CLDIB, sX: c_int, sY: c_int, sW: c_int, sH: c_int, flags: DWORD) -> c_int;
-    pub fn hbm_blit(hdc: HDC, dX: c_int, dY: c_int, dW: c_int, dH: c_int, hbm: HBITMAP, sX: c_int, sY: c_int, sW: c_int, sH: c_int, flags: DWORD) -> c_int;
-    // More Windows GDI interop (HDC-based blitting) — not needed for an egui renderer.
-}
+fn dib_to_hdc(hdc: HDC, rectDest: *const RECT, dib: *mut CLDIB, rectSrc: *const RECT, flags: DWORD) -> c_int;
+fn dib_blit(hdc: HDC, dX: c_int, dY: c_int, dW: c_int, dH: c_int, dib: *mut CLDIB, sX: c_int, sY: c_int, sW: c_int, sH: c_int, flags: DWORD) -> c_int;
+fn hbm_blit(hdc: HDC, dX: c_int, dY: c_int, dW: c_int, dH: c_int, hbm: HBITMAP, sX: c_int, sY: c_int, sW: c_int, sH: c_int, flags: DWORD) -> c_int;
+// More Windows GDI interop (HDC-based blitting) — not needed for an egui renderer.
 ```
 
 **Windows-only surface**: `dib_to_hbm`/`dib_from_hbm`/`dib_to_hdc`/`dib_blit`/`hbm_blit` depend on
@@ -173,62 +172,45 @@ this is not currently blocking, but don't rely on them if cross-platform support
 ### Functions — `Tilemap` (in-memory tilemap) manipulation
 
 ```rust
-extern "C" {
-    pub fn tmap_alloc() -> *mut Tilemap;
-    pub fn tmap_free(tm: *mut Tilemap);
-    // Lifecycle, analogous to grit_alloc/grit_free.
+fn tmap_alloc() -> *mut Tilemap;
+fn tmap_free(tm: *mut Tilemap);
+// Lifecycle, analogous to grit_alloc/grit_free.
 
-    pub fn tmap_init(tm: *mut Tilemap, mapWidth: c_int, mapHeight: c_int, tileW: c_int, tileH: c_int, flags: ETmapFlags);
-    // Initialize an already-allocated Tilemap's dimensions/flags (fresh, empty map+tileset).
+fn tmap_init(tm: *mut Tilemap, mapWidth: c_int, mapHeight: c_int, tileW: c_int, tileH: c_int, flags: ETmapFlags);
+// Initialize an already-allocated Tilemap's dimensions/flags (fresh, empty map+tileset).
 
-    pub fn tmap_init_from_dib(tm: *mut Tilemap, dib: *mut CLDIB, tileWidth: c_int, tileHeight: c_int, flags: ETmapFlags, extTiles: *mut CLDIB) -> bool;
-    // Build a tilemap by scanning `dib` into tileWidth x tileHeight tiles, deduplicating per
-    // `flags` (TmapFlags), optionally against a pre-existing external tileset `extTiles`
-    // (pass null to build a fresh tileset). This is the core "tile sheet -> tilemap" operation.
+fn tmap_init_from_dib(tm: *mut Tilemap, dib: *mut CLDIB, tileWidth: c_int, tileHeight: c_int, flags: ETmapFlags, extTiles: *mut CLDIB) -> bool;
+// Build a tilemap by scanning `dib` into tileWidth x tileHeight tiles, deduplicating per
+// `flags` (TmapFlags), optionally against a pre-existing external tileset `extTiles`
+// (pass null to build a fresh tileset). This is the core "tile sheet -> tilemap" operation.
 
-    pub fn tmap_set_map(tm: *mut Tilemap, mapWidth: c_int, mapHeight: c_int, mapData: *mut Mapsel, flags: ETmapFlags);
-    pub fn tmap_set_tiles(tm: *mut Tilemap, tileWidth: c_int, tileHeight: c_int, tiles: *mut CLDIB);
-    // Manually attach pre-built map data / tileset to a Tilemap instead of deriving via tmap_init_from_dib.
+fn tmap_set_map(tm: *mut Tilemap, mapWidth: c_int, mapHeight: c_int, mapData: *mut Mapsel, flags: ETmapFlags);
+fn tmap_set_tiles(tm: *mut Tilemap, tileWidth: c_int, tileHeight: c_int, tiles: *mut CLDIB);
+// Manually attach pre-built map data / tileset to a Tilemap instead of deriving via tmap_init_from_dib.
 
-    pub fn tmap_clear_map(tm: *mut Tilemap);
-    pub fn tmap_clear_tiles(tm: *mut Tilemap);
-    // Free just the map data / just the tileset, leaving the other intact.
+fn tmap_clear_map(tm: *mut Tilemap);
+fn tmap_clear_tiles(tm: *mut Tilemap);
+// Free just the map data / just the tileset, leaving the other intact.
 
-    pub fn tmap_detach_tiles(tm: *mut Tilemap) -> *mut CLDIB;
-    // Take ownership of tm's tileset CLDIB (tm no longer owns/frees it) and return it —
-    // use to extract the final tileset image separately from the map.
+fn tmap_detach_tiles(tm: *mut Tilemap) -> *mut CLDIB;
+// Take ownership of tm's tileset CLDIB (tm no longer owns/frees it) and return it —
+// use to extract the final tileset image separately from the map.
 
-    pub fn tmap_render(tm: *mut Tilemap, rect: *const RECT) -> *mut CLDIB;
-    // Render the tilemap back into a flat CLDIB image (for previewing) — note this takes a
-    // Win32 `RECT`, so likely Windows-only.
+fn tmap_render(tm: *mut Tilemap, rect: *const RECT) -> *mut CLDIB;
+// Render the tilemap back into a flat CLDIB image (for previewing) — note this takes a
+// Win32 `RECT`, so likely Windows-only.
 
-    pub fn tmap_pack(tm: *const Tilemap, dstRec: *mut RECORD, mf: *const MapselFormat);
-    // Pack tm's Mapsel entries into dstRec using the bit layout described by mf
-    // (e.g. &c_mapselGbaText). This produces the actual GBA-ready tilemap binary — the
-    // counterpart to what ends up in GritRec._mapRec.
+fn tmap_pack(tm: *const Tilemap, dstRec: *mut RECORD, mf: *const MapselFormat);
+// Pack tm's Mapsel entries into dstRec using the bit layout described by mf
+// (e.g. &c_mapselGbaText). This produces the actual GBA-ready tilemap binary — the
+// counterpart to what ends up in GritRec._mapRec.
 
-    pub fn tmap_unpack(tm: *mut Tilemap, srcRec: *const RECORD, mf: *const MapselFormat);
-    // Inverse of tmap_pack: unpack a raw RECORD back into tm's Mapsel array given the same format.
+fn tmap_unpack(tm: *mut Tilemap, srcRec: *const RECORD, mf: *const MapselFormat);
+// Inverse of tmap_pack: unpack a raw RECORD back into tm's Mapsel array given the same format.
 
-    pub fn tmap_get_tilecount(tm: *const Tilemap) -> uint;
-    // Number of unique tiles currently in tm's tileset.
-}
+fn tmap_get_tilecount(tm: *const Tilemap) -> uint;
+// Number of unique tiles currently in tm's tileset.
 ```
-
-**FFI note — C++ name mangling applies to *every* function in this library, not just
-`dib_*`/`tmap_*`.** Despite being wrapped in `extern "C" { }` blocks, every single binding —
-including `grit_alloc`, `cprs_compress`, `log_init`, etc. — carries an explicit
-`#[link_name = "..."]` pointing at an MSVC-mangled C++ symbol (e.g.
-`?dib_alloc@@YAPEAUCLDIB@@HHHPEBE_N@Z`, `?grit_alloc@@YAPEAUGritRec@@XZ`,
-`?cprs_compress@@YA_NPEAURECORD@@PEBU1@W4ECprsTag@@@Z`). This confirms the original design doc's
-note: the headers declare these functions without a C-linkage guard even though the
-implementation is compiled as C++, so the linker only knows them by their mangled names. bindgen
-has already resolved this correctly — the `link_name` override makes every call work
-transparently from Rust exactly as documented above — but be aware these are **not** stable C ABI
-symbols: relinking against a differently-configured build of Grit (different compiler/toolset/
-calling-convention than the MSVC build bindgen read symbols from, e.g. a MinGW or non-Windows
-build) will very likely produce different mangled names and break linking, requiring bindings.rs
-to be regenerated against that build's binary.
 
 ---
 
@@ -237,7 +219,7 @@ to be regenerated against that build's binary.
 ### Type: `COLOR`
 
 ```rust
-pub type COLOR = u16_;
+pub type COLOR = "u16_";
 ```
 
 GBA-format 16-bit color (5-5-5 BGR + alpha bit for NDS).
@@ -288,10 +270,8 @@ All enums in bindings.rs are declared as `pub type <Name> = ::std::os::raw::c_in
 ### Global format descriptors
 
 ```rust
-extern "C" {
-    pub static c_mapselGbaText: MapselFormat;     // standard GBA text-bg tilemap entry format
-    pub static c_mapselGbaAffine: MapselFormat;   // standard GBA affine-bg tilemap entry format
-}
+pub static c_mapselGbaText: MapselFormat; // standard GBA text-bg tilemap entry format
+pub static c_mapselGbaAffine: MapselFormat; // standard GBA affine-bg tilemap entry format
 ```
 
 ### Struct: `GritShared`
@@ -303,14 +283,14 @@ by several screens).
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct GritShared {
-    pub sharedMode: echar,      // main mode, see EGrsMode
-    pub logMode: echar,         // logging level, see ELogger
-    pub tilePath: *mut c_char,  // path to external tileset file (nullable)
-    pub symName: *mut c_char,   // shared symbol name
-    pub dstPath: *mut c_char,   // path to shared datastore file (nullable)
-    pub gfxBpp: u8,            // bitdepth for shared graphics (currently unused)
-    pub dib: *mut CLDIB,        // external tileset DIB (nullable, opaque — see note above)
-    pub palRec: RECORD,         // shared palette data (opaque — see note above)
+    pub sharedMode: echar, // main mode, see EGrsMode
+    pub logMode: echar, // logging level, see ELogger
+    pub tilePath: *mut c_char, // path to external tileset file (nullable)
+    pub symName: *mut c_char, // shared symbol name
+    pub dstPath: *mut c_char, // path to shared datastore file (nullable)
+    pub gfxBpp: u8, // bitdepth for shared graphics (currently unused)
+    pub dib: *mut CLDIB, // external tileset DIB (nullable, opaque — see note above)
+    pub palRec: RECORD, // shared palette data (opaque — see note above)
 }
 ```
 
@@ -329,18 +309,18 @@ pass to the `grit_*` functions.
 #[derive(Debug, Copy, Clone)]
 pub struct GritRec {
     // --- Source ---
-    pub srcPath: *mut c_char,  // path to source bitmap (informational)
-    pub srcDib: *mut CLDIB,                    // source bitmap handle (opaque)
+    pub srcPath: *mut c_char, // path to source bitmap (informational)
+    pub srcDib: *mut CLDIB, // source bitmap handle (opaque)
 
     // --- Output file / symbol ---
-    pub dstPath: *mut c_char,  // output directory/path
-    pub symName: *mut c_char,  // output symbol/identifier name
-    pub fileType: u8,                         // EGritFileType
-    pub extType: u8,                          // extension-string variant selector
-    pub bHeader: bool,                         // also emit a header file
-    pub bAppend: bool,                         // append to existing output file
-    pub bExport: bool,                         // global export enable/disable
-    pub bRiff: bool,                           // wrap data in RIFF chunks
+    pub dstPath: *mut c_char, // output directory/path
+    pub symName: *mut c_char, // output symbol/identifier name
+    pub fileType: u8, // EGritFileType
+    pub extType: u8, // extension-string variant selector
+    pub bHeader: bool, // also emit a header file
+    pub bAppend: bool, // append to existing output file
+    pub bExport: bool, // global export enable/disable
+    pub bRiff: bool, // wrap data in RIFF chunks
 
     // --- Crop rectangle [left,right) x [top,bottom) ---
     pub areaLeft: c_int,
@@ -349,127 +329,121 @@ pub struct GritRec {
     pub areaBottom: c_int,
 
     // --- Graphics (pixel data) ---
-    pub gfxProcMode: echar,                    // EGritDataProcMode
-    pub gfxDataType: echar,                    // EGritDataType
-    pub gfxCompression: echar,                 // EGritCompression
-    pub gfxMode: echar,                        // EGritGraphicsMode
-    pub texModeEnabled: bool,                  // enable NDS texture-format output
-    pub gfxBpp: u8,                           // output bits-per-pixel
-    pub gfxTexMode: u8,                       // EGritGraphicsTextureFormat
-    pub gfxHasAlpha: bool,                     // source image has transparent color
-    pub gfxAlphaColor: RGBQUAD,                // the transparent color value
-    pub gfxOffset: u32,                       // pixel value offset
-    pub gfxIsShared: bool,                     // graphics sourced from GritShared
+    pub gfxProcMode: echar, // EGritDataProcMode
+    pub gfxDataType: echar, // EGritDataType
+    pub gfxCompression: echar, // EGritCompression
+    pub gfxMode: echar, // EGritGraphicsMode
+    pub texModeEnabled: bool, // enable NDS texture-format output
+    pub gfxBpp: u8, // output bits-per-pixel
+    pub gfxTexMode: u8, // EGritGraphicsTextureFormat
+    pub gfxHasAlpha: bool, // source image has transparent color
+    pub gfxAlphaColor: RGBQUAD, // the transparent color value
+    pub gfxOffset: u32, // pixel value offset
+    pub gfxIsShared: bool, // graphics sourced from GritShared
 
     // --- Tilemap ---
-    pub mapProcMode: echar,                    // EGritDataProcMode
-    pub mapDataType: echar,                    // EGritDataType
-    pub mapCompression: echar,                 // EGritCompression
-    pub mapRedux: echar,                       // EGritMapRedux bitmask
-    pub mapLayout: echar,                      // EGritMapLayout
-    pub msFormat: MapselFormat,                // packed tilemap-entry bit layout
+    pub mapProcMode: echar, // EGritDataProcMode
+    pub mapDataType: echar, // EGritDataType
+    pub mapCompression: echar, // EGritCompression
+    pub mapRedux: echar, // EGritMapRedux bitmask
+    pub mapLayout: echar, // EGritMapLayout
+    pub msFormat: MapselFormat, // packed tilemap-entry bit layout
 
     // --- (Meta-)tile geometry ---
-    pub tileWidth: u8,                        // pixel size of one tile
+    pub tileWidth: u8, // pixel size of one tile
     pub tileHeight: u8,
-    pub metaWidth: u8,                        // metatile size, in tiles
+    pub metaWidth: u8, // metatile size, in tiles
     pub metaHeight: u8,
-    pub bColMajor: bool,                       // column-major tile layout
+    pub bColMajor: bool, // column-major tile layout
 
     // --- Palette, entry range [palStart, palEnd) ---
-    pub palProcMode: echar,                    // EGritDataProcMode
-    pub palDataType: echar,                    // EGritDataType
-    pub palCompression: echar,                 // EGritCompression
-    pub palHasAlpha: bool,                     // has transparent palette index
-    pub palAlphaId: u32,                      // that index
-    pub palStart: c_int,       // exported entry range start
-    pub palEnd: c_int,         // exported entry range end (exclusive)
-    pub palEndSet: bool,                       // whether palEnd was explicitly set
-    pub palIsShared: bool,                     // palette sourced from GritShared
+    pub palProcMode: echar, // EGritDataProcMode
+    pub palDataType: echar, // EGritDataType
+    pub palCompression: echar, // EGritCompression
+    pub palHasAlpha: bool, // has transparent palette index
+    pub palAlphaId: u32, // that index
+    pub palStart: c_int, // exported entry range start
+    pub palEnd: c_int, // exported entry range end (exclusive)
+    pub palEndSet: bool, // whether palEnd was explicitly set
+    pub palIsShared: bool, // palette sourced from GritShared
 
     // --- Shared-data link ---
-    pub shared: *mut GritShared,               // nullable pointer to shared data
+    pub shared: *mut GritShared, // nullable pointer to shared data
 
     // --- Private (populated by grit_run; treat as read-only output) ---
-    pub _dib: *mut CLDIB,                      // internal working bitmap
-    pub _origDib: *mut CLDIB,                  // unmodified bitmap (for alpha preservation)
-    pub _gfxRec: RECORD,                       // OUTPUT: graphics data
-    pub _mapRec: RECORD,                       // OUTPUT: tilemap data
-    pub _metaRec: RECORD,                      // OUTPUT: metatile data
-    pub _palRec: RECORD,                       // OUTPUT: palette data
+    pub _dib: *mut CLDIB, // internal working bitmap
+    pub _origDib: *mut CLDIB, // unmodified bitmap (for alpha preservation)
+    pub _gfxRec: RECORD, // OUTPUT: graphics data
+    pub _mapRec: RECORD, // OUTPUT: tilemap data
+    pub _metaRec: RECORD, // OUTPUT: metatile data
+    pub _palRec: RECORD, // OUTPUT: palette data
 }
 ```
 
 ### Functions — `GritRec` lifecycle
 
 ```rust
-extern "C" {
-    pub fn grit_alloc() -> *mut GritRec;
-    // Allocate a new GritRec with zeroed memory. Must be freed with grit_free.
+fn grit_alloc() -> *mut GritRec;
+// Allocate a new GritRec with zeroed memory. Must be freed with grit_free.
 
-    pub fn grit_free(gr: *mut GritRec);
-    // Free a GritRec previously returned by grit_alloc.
+fn grit_free(gr: *mut GritRec);
+// Free a GritRec previously returned by grit_alloc.
 
-    pub fn grit_init(gr: *mut GritRec);
-    // Reset all fields of an existing GritRec to default values.
+fn grit_init(gr: *mut GritRec);
+// Reset all fields of an existing GritRec to default values.
 
-    pub fn grit_init_from_dib(gr: *mut GritRec) -> bool;
-    // After srcDib is set, derive/initialize dependent fields. Returns false on failure.
+fn grit_init_from_dib(gr: *mut GritRec) -> bool;
+// After srcDib is set, derive/initialize dependent fields. Returns false on failure.
 
-    pub fn grit_clear(gr: *mut GritRec);
-    // Release internal buffers without freeing gr itself.
-    // Call before reusing a GritRec or before grit_free.
+fn grit_clear(gr: *mut GritRec);
+// Release internal buffers without freeing gr itself.
+// Call before reusing a GritRec or before grit_free.
 
-    pub fn grit_copy_options(dst: *mut GritRec, src: *const GritRec);
-    // Copy all non-string configuration fields from src to dst.
+fn grit_copy_options(dst: *mut GritRec, src: *const GritRec);
+// Copy all non-string configuration fields from src to dst.
 
-    pub fn grit_copy_strings(dst: *mut GritRec, src: *const GritRec);
-    // Copy string fields (paths, symbol names) from src to dst.
-}
+fn grit_copy_strings(dst: *mut GritRec, src: *const GritRec);
+// Copy string fields (paths, symbol names) from src to dst.
 ```
 
 ### Functions — running a conversion
 
 ```rust
-extern "C" {
-    pub fn grit_run(gr: *mut GritRec) -> bool;
-    // Full pipeline: validate -> prep -> export. Main entry point for image conversion.
-    // Returns false on failure (check log output for the reason).
+fn grit_run(gr: *mut GritRec) -> bool;
+// Full pipeline: validate -> prep -> export. Main entry point for image conversion.
+// Returns false on failure (check log output for the reason).
 
-    pub fn grit_validate(gr: *mut GritRec) -> bool;
-    // Sanity-check gr's configuration and source data. Called by grit_run.
+fn grit_validate(gr: *mut GritRec) -> bool;
+// Sanity-check gr's configuration and source data. Called by grit_run.
 
-    pub fn grit_prep(gr: *mut GritRec) -> bool;
-    // Perform the actual conversion: palette reduction, tiling, tilemap building, compression.
-    // Populates _gfxRec/_mapRec/_metaRec/_palRec. Called by grit_run.
+fn grit_prep(gr: *mut GritRec) -> bool;
+// Perform the actual conversion: palette reduction, tiling, tilemap building, compression.
+// Populates _gfxRec/_mapRec/_metaRec/_palRec. Called by grit_run.
 
-    pub fn grit_export(gr: *mut GritRec) -> bool;
-    // Write the prepared buffers to dstPath in the configured fileType. Called by grit_run.
-    // Can be called standalone to re-export already-prepped data.
+fn grit_export(gr: *mut GritRec) -> bool;
+// Write the prepared buffers to dstPath in the configured fileType. Called by grit_run.
+// Can be called standalone to re-export already-prepped data.
 
-    pub fn grit_compress(dst: *mut RECORD, src: *const RECORD, flags: u32) -> bool;
-    // Compress an arbitrary RECORD buffer. `flags` is an EGritCompression value.
-    // General-purpose entry point independent of GritRec.
-}
+fn grit_compress(dst: *mut RECORD, src: *const RECORD, flags: u32) -> bool;
+// Compress an arbitrary RECORD buffer. `flags` is an EGritCompression value.
+// General-purpose entry point independent of GritRec.
 ```
 
 ### Functions — `GritShared` lifecycle
 
 ```rust
-extern "C" {
-    pub fn grs_alloc() -> *mut GritShared;
-    // Allocate a new GritShared with zeroed memory.
+fn grs_alloc() -> *mut GritShared;
+// Allocate a new GritShared with zeroed memory.
 
-    pub fn grs_free(grs: *mut GritShared);
-    // Free a GritShared previously returned by grs_alloc.
+fn grs_free(grs: *mut GritShared);
+// Free a GritShared previously returned by grs_alloc.
 
-    pub fn grs_clear(grs: *mut GritShared);
-    // Release internal allocations without freeing grs itself.
+fn grs_clear(grs: *mut GritShared);
+// Release internal allocations without freeing grs itself.
 
-    pub fn grs_run(grs: *mut GritShared, gr_base: *mut GritRec);
-    // Build/update the shared tileset+palette data described by grs, using gr_base as the
-    // template conversion settings. Multiple GritRec conversions can reference via GritRec.shared.
-}
+fn grs_run(grs: *mut GritShared, gr_base: *mut GritRec);
+// Build/update the shared tileset+palette data described by grs, using gr_base as the
+// template conversion settings. Multiple GritRec conversions can reference via GritRec.shared.
 ```
 
 ### Misc
@@ -489,11 +463,11 @@ Grit's own compressors/decompressors, operating directly on `RECORD` buffers. `g
 ```rust
 pub type ECprsTag = c_int;
 
-pub const ECprsTag_CPRS_FAKE_TAG: ECprsTag = 0;      // uncompressed
-pub const ECprsTag_CPRS_LZ77_TAG: ECprsTag = 16;     // 0x10
-pub const ECprsTag_CPRS_HUFF_TAG: ECprsTag = 32;     // 0x20
-pub const ECprsTag_CPRS_HUFF8_TAG: ECprsTag = 40;    // 0x28, 8-bit Huffman
-pub const ECprsTag_CPRS_RLE_TAG: ECprsTag = 48;      // 0x30
+pub const ECprsTag_CPRS_FAKE_TAG: ECprsTag = 0; // uncompressed
+pub const ECprsTag_CPRS_LZ77_TAG: ECprsTag = 16; // 0x10
+pub const ECprsTag_CPRS_HUFF_TAG: ECprsTag = 32; // 0x20
+pub const ECprsTag_CPRS_HUFF8_TAG: ECprsTag = 40; // 0x28, 8-bit Huffman
+pub const ECprsTag_CPRS_RLE_TAG: ECprsTag = 48; // 0x30
 ```
 
 ### Function pointer type
@@ -507,31 +481,29 @@ pub type cprs_proc_t = ::std::option::Option<
 ### Functions
 
 ```rust
-extern "C" {
-    pub fn cprs_create_header(size: uint, tag: u8) -> u32;
-    // Build the 4-byte GBA compression header (tag byte + 24-bit uncompressed size).
+fn cprs_create_header(size: uint, tag: u8) -> u32;
+// Build the 4-byte GBA compression header (tag byte + 24-bit uncompressed size).
 
-    pub fn cprs_compress(dst: *mut RECORD, src: *const RECORD, tag: ECprsTag) -> bool;
-    // Compress src into dst using the scheme named by tag.
+fn cprs_compress(dst: *mut RECORD, src: *const RECORD, tag: ECprsTag) -> bool;
+// Compress src into dst using the scheme named by tag.
 
-    pub fn cprs_decompress(dst: *mut RECORD, src: *const RECORD) -> bool;
-    // Decompress src into dst; scheme auto-detected from header tag byte.
+fn cprs_decompress(dst: *mut RECORD, src: *const RECORD) -> bool;
+// Decompress src into dst; scheme auto-detected from header tag byte.
 
-    pub fn fake_compress(dst: *mut RECORD, src: *const RECORD) -> uint;
-    pub fn fake_decompress(dst: *mut RECORD, src: *const RECORD) -> uint;
-    // "No compression" passthrough, still wraps/unwraps the standard header.
+fn fake_compress(dst: *mut RECORD, src: *const RECORD) -> uint;
+fn fake_decompress(dst: *mut RECORD, src: *const RECORD) -> uint;
+// "No compression" passthrough, still wraps/unwraps the standard header.
 
-    pub fn lz77gba_compress(dst: *mut RECORD, src: *const RECORD) -> uint;
-    pub fn lz77gba_decompress(dst: *mut RECORD, src: *const RECORD) -> uint;
-    // GBA BIOS LZ77UnCompVram-compatible LZ77 compression.
+fn lz77gba_compress(dst: *mut RECORD, src: *const RECORD) -> uint;
+fn lz77gba_decompress(dst: *mut RECORD, src: *const RECORD) -> uint;
+// GBA BIOS LZ77UnCompVram-compatible LZ77 compression.
 
-    pub fn huffgba_compress(dst: *mut RECORD, src: *const RECORD) -> uint;
-    // GBA BIOS-compatible 8-bit Huffman compression.
+fn huffgba_compress(dst: *mut RECORD, src: *const RECORD) -> uint;
+// GBA BIOS-compatible 8-bit Huffman compression.
 
-    pub fn rle8gba_compress(dst: *mut RECORD, src: *const RECORD) -> uint;
-    pub fn rle8gba_decompress(dst: *mut RECORD, src: *const RECORD) -> uint;
-    // GBA BIOS-compatible 8-bit RLE compression.
-}
+fn rle8gba_compress(dst: *mut RECORD, src: *const RECORD) -> uint;
+fn rle8gba_decompress(dst: *mut RECORD, src: *const RECORD) -> uint;
+// GBA BIOS-compatible 8-bit RLE compression.
 ```
 
 ---
@@ -543,44 +515,30 @@ extern "C" {
 ```rust
 pub type ELogger = c_int;
 
-pub const ELogger_LOG_NONE: ELogger = 0;       // default, silent
-pub const ELogger_LOG_ERROR: ELogger = 1;      // fatal errors only
-pub const ELogger_LOG_WARNING: ELogger = 2;    // + non-fatal problems
-pub const ELogger_LOG_STATUS: ELogger = 3;     // + general progress messages
+pub const ELogger_LOG_NONE: ELogger = 0; // default, silent
+pub const ELogger_LOG_ERROR: ELogger = 1; // fatal errors only
+pub const ELogger_LOG_WARNING: ELogger = 2; // + non-fatal problems
+pub const ELogger_LOG_STATUS: ELogger = 3; // + general progress messages
 pub const ELogger_LOG_MAX: ELogger = 4;
 ```
 
 ### Functions
 
 ```rust
-extern "C" {
-    pub fn log_init(level: c_int, fp: *mut FILE);
-    // Initialize the logger: set level and output stream.
-    // Call once before using grit_run if you want diagnostic output.
+fn log_init(level: c_int, fp: *mut FILE);
+// Initialize the logger: set level and output stream.
+// Call once before using grit_run if you want diagnostic output.
 
-    pub fn log_exit();
-    // Tear down the logger.
+fn log_exit();
+// Tear down the logger.
 
-    pub fn log_set_level(level: c_int);
-    pub fn log_get_level() -> c_int;
-    // Get/set the current log verbosity (ELogger value).
+fn log_set_level(level: c_int);
+fn log_get_level() -> c_int;
+// Get/set the current log verbosity (ELogger value).
 
-    pub fn log_set_stream(fp: *mut FILE);
-    // Redirect log output to a different FILE* stream.
-
-    pub fn lprintf(
-        level: c_int,
-        format: *const c_char,
-        ...
-    ) -> c_int;
-    // printf-style log line, only emitted if `level` <= current log level.
-    // This is what grit's internals call to report progress/errors.
-}
+fn log_set_stream(fp: *mut FILE);
+// Redirect log output to a different FILE* stream.
 ```
-
-**FFI note:** `lprintf` is variadic (`...`) — bindgen generates a binding that appears in `bindings.rs`
-but should not be called directly from Rust as variadic functions are unsafe. It's listed for reference
-as a source of grit's console output.
 
 ---
 
@@ -619,7 +577,3 @@ None of these are relevant for the rust side, and they are therefore not include
 - **Compression choice**: Configure `GritRec.gfxCompression`/`mapCompression`/`palCompression`
   (using `EGritCompression` values) rather than calling `cprs_compress`/`grit_compress` directly,
   unless post-processing already-exported data.
-
-- **Linking risk**: see the C++ name-mangling FFI note above — these bindings are tied to the
-  exact compiler/toolset used to build the linked `grit` static lib; don't swap toolchains
-  without regenerating `bindings.rs`.
